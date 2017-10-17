@@ -87,27 +87,45 @@ end
 field = Field.new 10, 10
 snake = Snake.new [[2, 0], [1, 0], [0, 0]]
 
-loop do
-  t1 = Time.now
-
+draw = lambda do
   clear
   puts field
-  case snake.next
-  when 'wall'
-    snake.die
-  when 'segment'
-    snake.die
-  when 'food'
-    snake.eat
-  else
-    snake.move
-  end
-
   puts snake
+end
 
+debug = lambda do
   puts move_to 0, 30
   puts "body: #{snake.body}"
+end
 
+def within(time)
+  t1 = Time.now
+  yield
   t2 = Time.now
-  sleep 1.0 / 2.0 - (t2 - t1)
+  sleep time - (t2 - t1)
+end
+
+time = 0.5
+
+within time do
+  draw.call()
+  debug.call()
+end
+
+loop do
+  within time do
+    case snake.next
+    when 'wall'
+      snake.die
+    when 'segment'
+      snake.die
+    when 'food'
+      snake.eat
+    else
+      snake.move
+    end
+
+    draw.call()
+    debug.call()
+  end
 end
