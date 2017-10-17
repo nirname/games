@@ -5,8 +5,7 @@ def clear
 end
 
 def move_to(x, y)
-  # puts the cursor at line L and column C.
-  "\033[#{y + 1};#{x * 2 + 1}H"
+  "\033[#{y};#{x * 2}H"
 end
 
 Field = Struct.new :height, :length do
@@ -85,17 +84,18 @@ Snake = Struct.new :body do
 end
 
 field = Field.new 10, 10
-snake = Snake.new [[2, 0], [1, 0], [0, 0]]
+snake = Snake.new [[3, 1], [2, 1], [1, 1]]
+snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 
-draw = lambda do
+draw = -> do
   clear
-  puts field
-  puts snake
+  print field
+  print snake
 end
 
-debug = lambda do
-  puts move_to 0, 30
-  puts "body: #{snake.body}"
+debug = -> do
+  print move_to 0, 14
+  print "body: #{snake.body}"
 end
 
 def within(time)
@@ -112,14 +112,32 @@ within time do
   debug.call()
 end
 
+def wall?
+  lambda do |e|
+    false
+  end
+end
+
+def segment?
+  lambda do |e|
+    false
+  end
+end
+
+def food?
+  lambda do |e|
+    false
+  end
+end
+
 loop do
   within time do
     case snake.next
-    when 'wall'
+    when wall?
       snake.die
-    when 'segment'
+    when segment?
       snake.die
-    when 'food'
+    when food?
       snake.eat
     else
       snake.move
