@@ -37,28 +37,50 @@ Snake = Struct.new :body do
     s.join
   end
 
-  def step
+  def move
+    return if dead?
     body.pop
-    new_head = head.dup
-    case dir
+    body.unshift self.next
+  end
+
+  def eat
+    return if dead?
+    body.unshift self.next
+  end
+
+  def die
+    @dead = true
+  end
+
+  def dead?
+    @dead
+  end
+
+  def next
+    _next = head.dup
+    case direction
     when :right
-      new_head[0] += 1
+      _next[0] += 1
     when :left
-      new_head[0] -= 1
+      _next[0] -= 1
     when :up
-      new_head[1] += 1
+      _next[1] += 1
     when :down
-      new_head[1] -= 1
+      _next[1] -= 1
     end
-    body.unshift new_head
+    _next
   end
 
   def head
     body.first
   end
 
-  def dir
+  def direction
     :right
+  end
+
+  def turn(direction)
+    self.direction = direction
   end
 end
 
@@ -67,15 +89,25 @@ snake = Snake.new [[2, 0], [1, 0], [0, 0]]
 
 loop do
   t1 = Time.now
-  snake.step
 
   clear
   puts field
+  case snake.next
+  when 'wall'
+    snake.die
+  when 'segment'
+    snake.die
+  when 'food'
+    snake.eat
+  else
+    snake.move
+  end
+
   puts snake
 
   puts move_to 0, 30
-  p snake.body
+  puts "body: #{snake.body}"
 
   t2 = Time.now
-  sleep 1.0 / 1.0 - (t2 - t1)
+  sleep 1.0 / 2.0 - (t2 - t1)
 end
