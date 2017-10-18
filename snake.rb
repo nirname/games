@@ -5,7 +5,23 @@ def clear
 end
 
 def move_to(x, y)
-  "\033[#{y};#{x * 2}H"
+  "\033[#{y + 1};#{x * 2 + 1}H"
+end
+
+def read_char
+  STDIN.echo = false
+  STDIN.raw!
+
+  input = STDIN.getc.chr
+  if input == "\e" then
+    input << STDIN.read_nonblock(3) rescue nil
+    input << STDIN.read_nonblock(2) rescue nil
+  end
+ensure
+  STDIN.echo = true
+  STDIN.cooked!
+
+  return input
 end
 
 Field = Struct.new :height, :length do
@@ -28,10 +44,10 @@ Snake = Struct.new :body do
   def to_s
     s = []
     body[0..0].each do |(x, y)|
-      s << move_to(x + 1, y + 1) + '@'
+      s << move_to(x, y) + '@'
     end
     body[1..-1].each do |(x, y)|
-      s << move_to(x + 1, y + 1) + 'o'
+      s << move_to(x, y) + 'o'
     end
     s.join
   end
@@ -85,7 +101,6 @@ end
 
 field = Field.new 10, 10
 snake = Snake.new [[3, 1], [2, 1], [1, 1]]
-snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 
 draw = -> do
   clear
@@ -105,12 +120,7 @@ def within(time)
   sleep time - (t2 - t1)
 end
 
-time = 0.5
-
-within time do
-  draw.call()
-  debug.call()
-end
+time = 1
 
 def wall?
   lambda do |e|
@@ -128,6 +138,11 @@ def food?
   lambda do |e|
     false
   end
+end
+
+within time do
+  draw.call()
+  debug.call()
 end
 
 loop do
