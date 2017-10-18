@@ -11,25 +11,16 @@ def move_to(x, y)
 end
 
 def read_char
-  STDIN.echo = false
-  STDIN.raw!
-  input = STDIN.read_nonblock(1) rescue nil
-ensure
-  STDIN.echo = true
-  STDIN.cooked!
-  return input
+  system("stty raw -echo")
+  char = STDIN.read_nonblock(3) rescue nil
+  system("stty -raw echo")
+  char
 end
 
-def detect_char(c)
+def detect_key(c)
   case c
   when " "
     :space
-  # when "\t"
-  #   "TAB"
-  # when "\r"
-  #   "RETURN"
-  # when "\n"
-  #   "LINE FEED"
   when "\e"
     :escape
   when "\e[A"
@@ -40,12 +31,6 @@ def detect_char(c)
     :right
   when "\e[D"
     :left
-  # when "\177"
-  #   :backspace
-  # when "\004"
-  #   :delete
-  # when "\e[3~"
-  #   :alternate_delete
   when "\u0003"
     :control_c
   end
@@ -174,33 +159,45 @@ end
 
 time = 1
 
-within time do
-  draw.call()
-  debug.call()
-end
-
 loop do
-  within time do
-    # key = detect_char(read_char)
-    # case key
-    # when :up, :right, :down, :left
-    #   snake.turn(key)
-    # else
-    #   puts key
-    # end
-
-    case snake.next
-    when wall?
-      snake.die
-    when segment?
-      snake.die
-    when food?
-      snake.eat
-    else
-      snake.move
-    end
-
-    draw.call()
-    debug.call()
+  puts 'loop'
+  key = detect_key(read_char)
+  puts key if key
+  case key
+  when :up, :right, :down, :left
+  when :control_c
+    exit 0
+  else
   end
 end
+
+# within time do
+#   draw.call()
+#   debug.call()
+# end
+
+# loop do
+#   within time do
+#     # key = detect_char(read_char)
+#     # case key
+#     # when :up, :right, :down, :left
+#     #   snake.turn(key)
+#     # else
+#     #   puts key
+#     # end
+
+#     case snake.next
+#     when wall?
+#       snake.die
+#     when segment?
+#       snake.die
+#     when food?
+#       snake.eat
+#     else
+#       snake.move
+#     end
+
+#     draw.call()
+#     debug.call()
+#   end
+# end
