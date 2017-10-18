@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby -W0
 
+require 'io/console'
+
 def clear
   system "clear && printf '\033[3J'"
 end
@@ -11,43 +13,87 @@ end
 def read_char
   STDIN.echo = false
   STDIN.raw!
-
-  input = STDIN.getc.chr
-  if input == "\e" then
-    input << STDIN.read_nonblock(3) rescue nil
-    input << STDIN.read_nonblock(2) rescue nil
-  end
+  input = STDIN.read_nonblock(1) rescue nil
 ensure
   STDIN.echo = true
   STDIN.cooked!
-
   return input
 end
 
-Field = Struct.new :height, :length do
+def detect_char(c)
+  case c
+  when " "
+    :space
+  # when "\t"
+  #   "TAB"
+  # when "\r"
+  #   "RETURN"
+  # when "\n"
+  #   "LINE FEED"
+  when "\e"
+    :escape
+  when "\e[A"
+    :up
+  when "\e[B"
+    :down
+  when "\e[C"
+    :right
+  when "\e[D"
+    :left
+  # when "\177"
+  #   :backspace
+  # when "\004"
+  #   :delete
+  # when "\e[3~"
+  #   :alternate_delete
+  when "\u0003"
+    :control_c
+  end
+end
+
+FOOD = '*'
+SEGMENT = 'o'
+WALL = '#'
+HEAD = '@'
+
+def wall?
+  lambda do |e|
+    e.eql? WALL
+  end
+end
+
+def segment?
+  lambda do |e|
+    e.eql? SEGMENT
+  end
+end
+
+def food?
+  lambda do |e|
+    e.eql? FOOD
+  end
+end
+
+Field = Struct.new :cells do
+  def initialize(cells = {})
+    super
+  end
+
   def to_s
-    (length + 2).times.map do |y|
-      (height + 2).times.map  do |x|
-        if x == 0 or x == length + 2 - 1
-          '#'
-        elsif y == 0 or y == height + 2 - 1
-          '#'
-        else
-          ' '
-        end
-      end.join(' ')
-    end.join("\n")
+    cells.map do |(x, y), e|
+      move_to(x, y) + e
+    end.join
   end
 end
 
 Snake = Struct.new :body do
   def to_s
     s = []
-    body[0..0].each do |(x, y)|
-      s << move_to(x, y) + '@'
+    body[0..0].map do |(x, y)|
+      s << move_to(x, y) + HEAD
     end
-    body[1..-1].each do |(x, y)|
-      s << move_to(x, y) + 'o'
+    body[1..-1].map do |(x, y)|
+      s << move_to(x, y) + SEGMENT
     end
     s.join
   end
@@ -91,15 +137,21 @@ Snake = Struct.new :body do
   end
 
   def direction
-    :right
+    @direction || :right
   end
 
   def turn(direction)
-    self.direction = direction
+    @direction = direction
   end
 end
 
-field = Field.new 10, 10
+field = Field.new
+12.times do |n|
+  field.cells[[n, 0]] = WALL
+  field.cells[[n, 11]] = WALL
+  field.cells[[0, n]] = WALL
+  field.cells[[11, n]] = WALL
+end
 snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 
 draw = -> do
@@ -122,24 +174,6 @@ end
 
 time = 1
 
-def wall?
-  lambda do |e|
-    false
-  end
-end
-
-def segment?
-  lambda do |e|
-    false
-  end
-end
-
-def food?
-  lambda do |e|
-    false
-  end
-end
-
 within time do
   draw.call()
   debug.call()
@@ -147,6 +181,14 @@ end
 
 loop do
   within time do
+    # key = detect_char(read_char)
+    # case key
+    # when :up, :right, :down, :left
+    #   snake.turn(key)
+    # else
+    #   puts key
+    # end
+
     case snake.next
     when wall?
       snake.die
