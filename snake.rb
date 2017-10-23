@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby -W0
 
 require 'io/console'
+require 'set'
 
 def clear
   system "clear && printf '\033[3J'"
@@ -110,9 +111,9 @@ Snake = Struct.new :body do
     when :left
       _next[0] -= 1
     when :up
-      _next[1] += 1
-    when :down
       _next[1] -= 1
+    when :down
+      _next[1] += 1
     end
     _next
   end
@@ -126,6 +127,8 @@ Snake = Struct.new :body do
   end
 
   def turn(direction)
+    return if [@direction, direction].to_set == [:left, :right].to_set
+    return if [@direction, direction].to_set == [:up, :down].to_set
     @direction = direction
   end
 end
@@ -157,18 +160,47 @@ def within(time)
   sleep time - (t2 - t1)
 end
 
-time = 1
+time = 0.5
 
+t0 = Time.now
+lag = 0
 loop do
-  puts 'loop'
+
+  t1 = Time.now()
+  lag += t1 - t0
+  t0 = t1
+
+  # double current = getCurrentTime();
+  # double elapsed = current - previous;
+  # lag += elapsed;
+  # previous = current;
+
+  t1 = Time.now
+  # puts 'loop'
   key = detect_key(read_char)
-  puts key if key
+  # puts key if key
+
   case key
   when :up, :right, :down, :left
+    snake.turn(key)
+    # snake.move
   when :control_c
     exit 0
   else
   end
+
+  while (lag >= time)
+    # draw.call()
+    # debug.call()
+
+    # update
+    snake.move
+
+    lag -= time
+  end
+
+  draw.call()
+  sleep 0.02
 end
 
 # within time do
