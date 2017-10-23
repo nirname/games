@@ -183,7 +183,8 @@ loop do
   case key
   when :up, :right, :down, :left
     snake.turn(key)
-    # snake.move
+    snake.move
+    lag = 0
   when :control_c
     exit 0
   else
