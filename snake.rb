@@ -14,7 +14,7 @@ end
 def read_char
   system("stty raw -echo")
   char = STDIN.read_nonblock(3) rescue nil
-  system("stty -raw echo")
+  # system("stty -raw echo")
   char
 end
 
@@ -80,7 +80,25 @@ Field = Struct.new :width, :height, :cells do
   end
 end
 
-Snake = Struct.new :body do
+class Symbol
+  def same?(symbol)
+    self == symbol
+  end
+
+  def opposite?(symbol)
+    return true if self == :right && symbol == :left
+    return true if self == :left && symbol == :right
+    return true if self == :up && symbol == :down
+    return true if self == :down && symbol == :up
+    false
+  end
+end
+
+Snake = Struct.new :body, :direction do
+  def initialize(body, direction = :right)
+    super
+  end
+
   def to_s
     s = []
     body[0..0].map do |(x, y)|
@@ -130,14 +148,11 @@ Snake = Struct.new :body do
     body.first
   end
 
-  def direction
-    @direction || :right
-  end
+  def turn(new_direction)
+    return if direction.opposite?(new_direction)
+    return if direction.same?(new_direction)
 
-  def turn(direction)
-    return if [@direction, direction].to_set == [:left, :right].to_set
-    return if [@direction, direction].to_set == [:up, :down].to_set
-    @direction = direction
+    self.direction = new_direction
   end
 end
 
@@ -168,78 +183,49 @@ def within(time)
   sleep time - (t2 - t1)
 end
 
-time = 0.5
+begin
+  time = 0.5
 
-t0 = Time.now
-lag = 0
-clear
-loop do
+  previous = Time.now
+  lag = 0
+  clear
+  loop do
+    current = Time.now
+    elapsed = current - previous
+    lag += elapsed
+    previous = current
 
-  t1 = Time.now()
-  lag += t1 - t0
-  t0 = t1
+    key = detect_key(read_char)
 
-  # double current = getCurrentTime();
-  # double elapsed = current - previous;
-  # lag += elapsed;
-  # previous = current;
+    case key
+    when :up, :right, :down, :left
+      if snake.turn(key)
+        lag = time
+      end
+    when :control_c
+      system("stty -raw echo")
+      exit 0
+    else
+    end
 
-  t1 = Time.now
-  # puts 'loop'
-  key = detect_key(read_char)
-  # puts key if key
+    while (lag >= time)
+      lag -= time
 
-  case key
-  when :up, :right, :down, :left
-    snake.turn(key)
-    snake.move
-    lag = 0
-  when :control_c
-    exit 0
-  else
+      case snake.next
+      when wall?
+        snake.die
+      when segment?
+        snake.die
+      when food?
+        snake.eat
+      else
+        snake.move unless snake.dead?
+      end
+    end
+
+    draw.call()
+    sleep 0.02
   end
-
-  while (lag >= time)
-    # draw.call()
-    # debug.call()
-
-    # update
-    snake.move
-
-    lag -= time
-  end
-
-  draw.call()
-  sleep 0.02
+ensure
+  system("stty -raw echo")
 end
-
-# within time do
-#   draw.call()
-#   debug.call()
-# end
-
-# loop do
-#   within time do
-#     # key = detect_char(read_char)
-#     # case key
-#     # when :up, :right, :down, :left
-#     #   snake.turn(key)
-#     # else
-#     #   puts key
-#     # end
-
-#     case snake.next
-#     when wall?
-#       snake.die
-#     when segment?
-#       snake.die
-#     when food?
-#       snake.eat
-#     else
-#       snake.move
-#     end
-
-#     draw.call()
-#     debug.call()
-#   end
-# end
