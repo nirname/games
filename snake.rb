@@ -2,6 +2,7 @@
 
 require 'io/console'
 require 'set'
+system("stty raw -echo")
 
 def clear
   system "clear && printf '\033[3J'"
@@ -12,7 +13,6 @@ def move_to(x, y)
 end
 
 def read_char
-  system("stty raw -echo")
   char = STDIN.read_nonblock(3) rescue nil
   # system("stty -raw echo")
   char
@@ -41,6 +41,7 @@ FOOD = '*'
 SEGMENT = 'o'
 WALL = '#'
 HEAD = '@'
+SKULL = 'X'
 
 def wall?
   lambda do |e|
@@ -102,7 +103,7 @@ Snake = Struct.new :body, :direction do
   def to_s
     s = []
     body[0..0].map do |(x, y)|
-      s << move_to(x, y) + HEAD
+      s << move_to(x, y) + (dead? ? SKULL : HEAD)
     end
     body[1..-1].map do |(x, y)|
       s << move_to(x, y) + SEGMENT
@@ -156,6 +157,16 @@ Snake = Struct.new :body, :direction do
   end
 end
 
+def grow_food(field, snake)
+  loop do
+    place = [rand(0 ... field.width), rand(0 ... field.height)]
+    if !field.cells[place] && !snake.body.include?(place)
+      field.cells[place] = FOOD
+      return
+    end
+  end
+end
+
 field = Field.new(12, 12)
 12.times do |n|
   field.cells[[n, 0]] = WALL
@@ -164,6 +175,8 @@ field = Field.new(12, 12)
   field.cells[[11, n]] = WALL
 end
 snake = Snake.new [[3, 1], [2, 1], [1, 1]]
+
+grow_food(field, snake)
 
 draw = -> do
   # clear
@@ -176,11 +189,16 @@ debug = -> do
   print "body: #{snake.body}"
 end
 
-def within(time)
-  t1 = Time.now
-  yield
-  t2 = Time.now
-  sleep time - (t2 - t1)
+# def within(time)
+#   t1 = Time.now
+#   yield
+#   t2 = Time.now
+#   sleep time - (t2 - t1)
+# end
+
+def quit
+  system("stty -raw echo")
+  exit 0
 end
 
 begin
@@ -203,21 +221,22 @@ begin
         lag = time
       end
     when :control_c
-      system("stty -raw echo")
-      exit 0
+      quit
     else
     end
 
     while (lag >= time)
       lag -= time
 
-      case snake.next
+      case field.cells[snake.next]
       when wall?
         snake.die
-      when segment?
-        snake.die
+      # when segment? # не работает, починить
+      #   snake.die
       when food?
+        field.cells.delete(snake.next)
         snake.eat
+        grow_food(field, snake)
       else
         snake.move unless snake.dead?
       end
