@@ -60,15 +60,23 @@ def food?
   end
 end
 
-Field = Struct.new :cells do
-  def initialize(cells = {})
+Field = Struct.new :width, :height, :cells do
+  def initialize(width, height, cells = {})
     super
   end
 
   def to_s
-    cells.map do |(x, y), e|
-      move_to(x, y) + e
-    end.join
+    blank_field =
+      width.times.map do |x|
+        height.times.map do |y|
+          move_to(x, y) + ' '
+        end
+      end.join
+    borders =
+      cells.map do |(x, y), e|
+        move_to(x, y) + e
+      end.join
+    blank_field + borders
   end
 end
 
@@ -133,7 +141,7 @@ Snake = Struct.new :body do
   end
 end
 
-field = Field.new
+field = Field.new(12, 12)
 12.times do |n|
   field.cells[[n, 0]] = WALL
   field.cells[[n, 11]] = WALL
@@ -143,7 +151,7 @@ end
 snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 
 draw = -> do
-  clear
+  # clear
   print field
   print snake
 end
@@ -164,6 +172,7 @@ time = 0.5
 
 t0 = Time.now
 lag = 0
+clear
 loop do
 
   t1 = Time.now()
