@@ -14,7 +14,6 @@ end
 
 def read_char
   char = STDIN.read_nonblock(3) rescue nil
-  # system("stty -raw echo")
   char
 end
 
@@ -73,11 +72,11 @@ Field = Struct.new :width, :height, :cells do
           move_to(x, y) + ' '
         end
       end.join
-    borders =
+    walls =
       cells.map do |(x, y), e|
         move_to(x, y) + e
       end.join
-    blank_field + borders
+    blank_field + walls
   end
 end
 
@@ -186,7 +185,6 @@ snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 grow_food(field, snake)
 
 draw = -> do
-  # clear
   print field
   print snake
 end
@@ -195,13 +193,6 @@ debug = -> do
   print move_to 0, 14
   print "body: #{snake.body}"
 end
-
-# def within(time)
-#   t1 = Time.now
-#   yield
-#   t2 = Time.now
-#   sleep time - (t2 - t1)
-# end
 
 def quit
   clear
