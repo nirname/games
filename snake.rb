@@ -157,10 +157,17 @@ Snake = Struct.new :body, :direction do
   end
 end
 
+def fetch_cell(place, field, snake)
+  cell = field.cells[place]
+  cell ||= snake.head.include?(place) ? HEAD : nil
+  cell ||= snake.body.include?(place) ? SEGMENT : nil
+  cell
+end
+
 def grow_food(field, snake)
   loop do
     place = [rand(0 ... field.width), rand(0 ... field.height)]
-    if !field.cells[place] && !snake.body.include?(place)
+    if !fetch_cell(place, field, snake)
       field.cells[place] = FOOD
       return
     end
@@ -197,6 +204,7 @@ end
 # end
 
 def quit
+  clear
   system("stty -raw echo")
   exit 0
 end
@@ -228,11 +236,11 @@ begin
     while (lag >= time)
       lag -= time
 
-      case field.cells[snake.next]
+      case fetch_cell(snake.next, field, snake)
       when wall?
         snake.die
-      # when segment? # не работает, починить
-      #   snake.die
+      when segment?
+        snake.die
       when food?
         field.cells.delete(snake.next)
         snake.eat
