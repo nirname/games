@@ -1,3 +1,9 @@
 # Games
 
-snake.rb - Snake console ruby implementation
+## Snake
+
+Snake console ruby implementation
+
+```
+./snake.rb
+```
