@@ -206,7 +206,7 @@ begin
 
   previous = Time.now
   lag = 0
-  level = 0
+  boost = 0
   clear
 
   loop do
