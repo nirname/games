@@ -41,6 +41,7 @@ SEGMENT = 'o'
 WALL = '#'
 HEAD = '@'
 SKULL = 'X'
+TIME_THRESHOLD = 0.1
 
 def wall?
   lambda do |e|
@@ -205,7 +206,9 @@ begin
 
   previous = Time.now
   lag = 0
+  level = 0
   clear
+
   loop do
     current = Time.now
     elapsed = current - previous
@@ -233,6 +236,11 @@ begin
       when segment?
         snake.die
       when food?
+        level += 1
+
+        time -= 0.001 * (level ** 2)
+        time = TIME_THRESHOLD if time < TIME_THRESHOLD
+
         field.cells.delete(snake.next)
         snake.eat
         grow_food(field, snake)
