@@ -236,9 +236,9 @@ begin
       when segment?
         snake.die
       when food?
-        level += 1
+        boost += 1
 
-        time -= 0.001 * (level ** 2)
+        time -= 0.001 * (boost ** 2)
         time = TIME_THRESHOLD if time < TIME_THRESHOLD
 
         field.cells.delete(snake.next)
