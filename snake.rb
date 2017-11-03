@@ -41,7 +41,6 @@ SEGMENT = 'o'
 WALL = '#'
 HEAD = '@'
 SKULL = 'X'
-TIME_THRESHOLD = 0.1
 
 def wall?
   lambda do |e|
@@ -201,6 +200,9 @@ def quit
   exit 0
 end
 
+MAX_TIME = 0.5
+MIN_TIME = 0.1
+
 begin
   time = 0.5
 
@@ -238,8 +240,8 @@ begin
       when food?
         boost += 1
 
-        time -= 0.001 * (boost ** 2)
-        time = TIME_THRESHOLD if time < TIME_THRESHOLD
+        time = MAX_TIME - 0.001 * (boost ** 2)
+        time = MIN_TIME if time < MIN_TIME
 
         field.cells.delete(snake.next)
         snake.eat
