@@ -94,8 +94,8 @@ class Symbol
   end
 end
 
-Snake = Struct.new :body, :direction do
-  def initialize(body, direction = :right)
+Snake = Struct.new :body, :direction, :state do
+  def initialize(body, direction = :right, state = :asleep)
     super
   end
 
@@ -121,12 +121,32 @@ Snake = Struct.new :body, :direction do
     body.unshift self.next
   end
 
+  def length
+    body.length
+  end
+
+  def sleep
+    self.state = :asleep if alive? && !dead?
+  end
+
+  def asleep?
+    self.state == :asleep
+  end
+
+  def wake
+    self.state = :alive if asleep? && !dead?
+  end
+
+  def alive?
+    self.state == :alive
+  end
+
   def die
-    @dead = true
+    self.state = :dead
   end
 
   def dead?
-    @dead
+    self.state == :dead
   end
 
   def next
@@ -187,6 +207,9 @@ grow_food(field, snake)
 draw = -> do
   print field
   print snake
+  print move_to(0, field.height + 1)
+  puts "Use arrow keys to play\r"
+  puts "Press Control + c to exit\r"
 end
 
 debug = -> do
@@ -208,7 +231,7 @@ begin
 
   previous = Time.now
   lag = 0
-  boost = 0
+
   clear
 
   loop do
@@ -218,6 +241,8 @@ begin
     previous = current
 
     key = detect_key(read_char)
+
+    snake.wake if key && snake.asleep?
 
     case key
     when :up, :right, :down, :left
@@ -238,16 +263,14 @@ begin
       when segment?
         snake.die
       when food?
-        boost += 1
-
-        time = MAX_TIME - 0.001 * (boost ** 2)
+        time = MAX_TIME - 0.001 * (snake.length ** 2)
         time = MIN_TIME if time < MIN_TIME
 
         field.cells.delete(snake.next)
         snake.eat
         grow_food(field, snake)
       else
-        snake.move unless snake.dead?
+        snake.move if snake.alive?
       end
     end
 
