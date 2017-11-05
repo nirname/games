@@ -223,12 +223,18 @@ def quit
   exit 0
 end
 
-MAX_TIME = 0.5
-MIN_TIME = 0.1
+speed = 2 # ticks per sec
+
+time_per_update = -> do
+  1.0 / speed
+end
+
+# x - progress between 0 and 1
+def ease_out(x, n = 1)
+  1.0 - (1.0 - x) ** n
+end
 
 begin
-  time = 0.5
-
   previous = Time.now
   lag = 0
 
@@ -247,15 +253,15 @@ begin
     case key
     when :up, :right, :down, :left
       if snake.turn(key)
-        lag = time
+        lag = time_per_update.call()
       end
     when :control_c
       quit
     else
     end
 
-    while (lag >= time)
-      lag -= time
+    while (lag >= time_per_update.call())
+      lag -= time_per_update.call()
 
       case fetch_cell(snake.next, field, snake)
       when wall?
@@ -263,9 +269,8 @@ begin
       when segment?
         snake.die
       when food?
-        time = MAX_TIME - 0.001 * (snake.length ** 2)
-        time = MIN_TIME if time < MIN_TIME
-
+        progress = ([snake.length, 100].min / 100.0)
+        speed = 2 + 10 * ease_out(progress, 2)
         field.cells.delete(snake.next)
         snake.eat
         grow_food(field, snake)
