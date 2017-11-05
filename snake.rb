@@ -234,6 +234,8 @@ def ease_out(x, n = 1)
   1.0 - (1.0 - x) ** n
 end
 
+game_paused = false
+
 begin
   previous = Time.now
   lag = 0
@@ -257,7 +259,8 @@ begin
       end
     when :control_c
       quit
-    else
+    when :space
+      game_paused = !game_paused
     end
 
     while (lag >= time_per_update.call())
@@ -270,7 +273,7 @@ begin
         snake.die
       when food?
         progress = ([snake.length, 100].min / 100.0)
-        speed = 2 + 10 * ease_out(progress, 2)
+        speed = 2 + 8 * ease_out(progress, 2)
         field.cells.delete(snake.next)
         snake.eat
         grow_food(field, snake)
