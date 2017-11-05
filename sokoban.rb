@@ -8,8 +8,8 @@ def clear
   system "clear && printf '\033[3J'"
 end
 
-def move_to(x, y)
-  "\033[#{y + 1};#{x * 2 + 1}H"
+def move_to(position)
+  "\033[#{position.y + 1};#{position.x * 2 + 1}H"
 end
 
 def read_char
@@ -42,8 +42,13 @@ def quit
   exit 0
 end
 
-WALL = '#'
-MAN = '@'
+WALL = '#' # 0x23
+PLAYER = '@' # 0x40
+PLAYER_ON_GOAL_SQUARE = '+' # 0x2b
+BOX = '$'# 0x24
+BOX_ON_GOAL_SQUARE = '*' # 0x2a
+GOAL_SQUARE = '.' # 0x2e
+FLOOR = ' ' # 0x20
 
 Point = Struct.new :x, :y do
   def +(point)
@@ -71,9 +76,6 @@ class Symbol
   end
 end
 
-Field = Struct.new :width, :height do
-end
-
 Sokoban = Struct.new :position do
   def step(direction)
     self.position += direction
@@ -84,14 +86,42 @@ Sokoban = Struct.new :position do
   end
 
   def to_s
-    move_to(position.x, position.y) + MAN
+    move_to(position) + PLAYER
   end
 end
+
+class Field
+  attr_accessor :cells
+  attr_accessor :boxes
+  attr_accessor :player
+
+  def initialize
+    self.cells ||= {}
+  end
+
+  def load(data)
+    data.split("\n").each_with_index do |row, y|
+      row.split('').each_with_index do |char, x|
+        cells[Point.new(x, y)] = char
+      end
+    end
+  end
+
+  def to_s
+    cells.map do |position, char|
+      move_to(position) + char
+    end.join
+  end
+end
+
+field = Field.new
+field.load(File.read('level1.txt'))
 
 sokoban = Sokoban.new(Point.new(1, 1))
 
 draw = -> do
-  print sokoban
+  print field
+  # print sokoban
 end
 
 possible = ->(direction) do
