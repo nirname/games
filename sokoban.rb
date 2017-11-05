@@ -47,27 +47,31 @@ MAN = '@'
 
 Point = Struct.new :x, :y do
   def +(point)
-    Point.new(self.x + point.x, self.y + point.y)
+    case point
+    when Point
+      Point.new(self.x + point.x, self.y + point.y)
+    else
+      if point.respond_to? :to_p
+        self + point.to_p
+      else
+        raise TypeError, "#{point.class} cannot be coersed into Point"
+      end
+    end
+  end
+end
+
+class Symbol
+  def to_p
+    case self
+    when :up then Point.new(0, -1)
+    when :down then Point.new(0, 1)
+    when :left then Point.new(-1, 0)
+    when :right then Point.new(1, 0)
+    end
   end
 end
 
 Field = Struct.new :width, :height do
-end
-
-UP = Point.new(0, -1)
-DOWN = Point.new(0, 1)
-LEFT = Point.new(-1, 0)
-RIGHT = Point.new(1, 0)
-
-class Symbol
-  def to_direction
-    case self
-    when :up then UP
-    when :down then DOWN
-    when :left then LEFT
-    when :right then RIGHT
-    end
-  end
 end
 
 Sokoban = Struct.new :position do
@@ -91,7 +95,7 @@ draw = -> do
 end
 
 possible = ->(direction) do
-  # sokoban.next(direction)
+  next1, next2 = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
   true
 end
 
@@ -101,7 +105,7 @@ loop do
   key = detect_key(read_char)
   case key
   when :up, :right, :down, :left
-    direction = key.to_direction
+    direction = key
     if possible.call(direction)
       sokoban.step(direction)
     end
