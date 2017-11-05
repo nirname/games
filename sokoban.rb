@@ -54,21 +54,29 @@ end
 Field = Struct.new :width, :height do
 end
 
+UP = Point.new(0, -1)
+DOWN = Point.new(0, 1)
+LEFT = Point.new(-1, 0)
+RIGHT = Point.new(1, 0)
+
+class Symbol
+  def to_direction
+    case self
+    when :up then UP
+    when :down then DOWN
+    when :left then LEFT
+    when :right then RIGHT
+    end
+  end
+end
+
 Sokoban = Struct.new :position do
-  def up
-    self.position += Point.new(0, -1)
+  def step(direction)
+    self.position += direction
   end
 
-  def down
-    self.position += Point.new(0, 1)
-  end
-
-  def left
-    self.position += Point.new(-1, 0)
-  end
-
-  def right
-    self.position += Point.new(1, 0)
+  def next(direction)
+    Sokoban.new(self.position + direction)
   end
 
   def to_s
@@ -82,19 +90,21 @@ draw = -> do
   print sokoban
 end
 
+possible = ->(direction) do
+  # sokoban.next(direction)
+  true
+end
+
 clear
 
 loop do
   key = detect_key(read_char)
   case key
-  when :up
-    sokoban.up
-  when :right
-    sokoban.right
-  when :down
-    sokoban.down
-  when :left
-    sokoban.left
+  when :up, :right, :down, :left
+    direction = key.to_direction
+    if possible.call(direction)
+      sokoban.step(direction)
+    end
   when :control_c
     quit
   when :space
