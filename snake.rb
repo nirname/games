@@ -204,17 +204,21 @@ snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 
 grow_food(field, snake)
 
+info = -> do
+  move_to(0, field.height + 1) +
+  "Use arrow keys to play\n\r" +
+  "Press Control + c to exit\n\r" +
+  "Press Space to pause\n\r"
+end
+
 draw = -> do
   print field
   print snake
-  print move_to(0, field.height + 1)
-  puts "Use arrow keys to play\r"
-  puts "Press Control + c to exit\r"
+  print info.call()
 end
 
 debug = -> do
-  print move_to 0, 14
-  print "body: #{snake.body}"
+  move_to(0, 14) + "body: #{snake.body}"
 end
 
 def quit
@@ -233,8 +237,6 @@ end
 def ease_out(x, n = 1)
   1.0 - (1.0 - x) ** n
 end
-
-game_paused = false
 
 begin
   previous = Time.now
@@ -260,7 +262,7 @@ begin
     when :control_c
       quit
     when :space
-      game_paused = !game_paused
+      snake.sleep
     end
 
     while (lag >= time_per_update.call())
