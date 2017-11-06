@@ -8,7 +8,7 @@ def clear
   system "clear && printf '\033[3J'"
 end
 
-def move_to(position)
+def print_at(position)
   "\033[#{position.y + 1};#{position.x * 2 + 1}H"
 end
 
@@ -104,7 +104,7 @@ end
 
 class Wall < Block
   def to_s
-    move_to(position) + WALL
+    print_at(position) + WALL
   end
 
   def can_be_moved_to(block)
@@ -114,7 +114,7 @@ end
 
 class Box < Block
   def to_s
-    move_to(position) + (self.on?(GOAL_SQUARE) ? BOX_ON_GOAL_SQUARE : BOX)
+    print_at(position) + (self.on?(GOAL_SQUARE) ? BOX_ON_GOAL_SQUARE : BOX)
   end
 
   def can_be_moved_to(block)
@@ -129,7 +129,7 @@ end
 
 class Player < Block
   def to_s
-    move_to(position) + (self.on?(GOAL_SQUARE) ? PLAYER_ON_GOAL_SQUARE : PLAYER)
+    print_at(position) + (self.on?(GOAL_SQUARE) ? PLAYER_ON_GOAL_SQUARE : PLAYER)
   end
 
   def can_be_moved_to(block)
@@ -142,6 +142,10 @@ class Player < Block
       false
     end
   end
+end
+
+class Promise < Proc
+  alias :to :call
 end
 
 class Field
@@ -176,6 +180,10 @@ class Field
         when PLAYER_ON_GOAL_SQUARE
           self.blocks << Player.new(Point.new(x, y)).on(GOAL_SQUARE)
           self.cells[Point.new(x, y)] = GOAL_SQUARE
+        when FLOOR
+          self.cells[Point.new(x, y)] = FLOOR
+        when GOAL_SQUARE
+          self.cells[Point.new(x, y)] = GOAL_SQUARE
         end
       end
     end
@@ -185,10 +193,19 @@ class Field
     self.blocks.select{ |block| block.position == position }.first || EmptyBlock.new(position)
   end
 
+  def move(block)
+    Promise.new do |position|
+      unless block.is_a? EmptyBlock
+        self.blocks.delete(block)
+        self.blocks << block.class.new(position).on(self.cells[position])
+      end
+    end
+  end
+
   def to_s
     s = ''
     s += cells.map do |position, char|
-      move_to(position) + char
+      print_at(position) + char
     end.join
     s += blocks.map(&:to_s).join
     s
@@ -206,6 +223,8 @@ end
 
 clear
 
+draw.call()
+
 loop do
   key = detect_key(read_char)
   case key
@@ -216,22 +235,22 @@ loop do
     next_block = field[next_position]
     following_block = field[following_position]
 
-    puts field.blocks.inspect
-    puts next_position.inspect
-    puts following_position.inspect
-    puts next_block.inspect
-    puts following_block.inspect
+    # puts field.blocks.inspect
+    # puts next_position.inspect
+    # puts following_position.inspect
+    # puts next_block.inspect
+    # puts following_block.inspect
 
     if player.can_be_moved_to(next_block) && next_block.can_be_moved_to(following_block)
-    #   field.move(player).to(first_position)
-      raise 'yes'
-    else
-      raise 'no'
+      field.move(player).to(next_position)
+      field.move(next_block).to(following_position)
+      # field.move(player).to(first_position)
+      # field.move(box).to(following_position)
     end
   when :control_c
     quit
   when :space
   end
 
-  draw.call()
+  draw.call() if key
 end
