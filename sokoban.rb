@@ -63,6 +63,10 @@ Point = Struct.new :x, :y do
       end
     end
   end
+
+  def next(direction)
+    self + direction
+  end
 end
 
 class Symbol
@@ -79,10 +83,6 @@ end
 Block = Struct.new :position, :cell do
   def initialize(position, cell = FLOOR)
     super
-  end
-
-  def next(direction)
-    self.class.new(self.position + direction)
   end
 
   def on(cell)
@@ -104,17 +104,17 @@ end
 
 class Box < Block
   def to_s
-    move_to(position) + (on?(GOAL_SQUARE) ? BOX_ON_GOAL_SQUARE : BOX)
+    move_to(position) + (self.on?(GOAL_SQUARE) ? BOX_ON_GOAL_SQUARE : BOX)
   end
 end
 
 class Player < Block
   def to_s
-    move_to(position) + (on?(GOAL_SQUARE) ? PLAYER_ON_GOAL_SQUARE : PLAYER)
+    move_to(position) + (self.on?(GOAL_SQUARE) ? PLAYER_ON_GOAL_SQUARE : PLAYER)
   end
 end
 
-class Game
+class Field
   attr_accessor :blocks
   attr_accessor :cells
   attr_reader   :player
@@ -124,9 +124,8 @@ class Game
     @blocks = {}
   end
 
-  def player=(value)
-    raise 'Only one player is supported' if @player
-    @player = value
+  def player
+    self.blocks.values.select{ |block| block.is_a? Player }.first
   end
 
   def load(data)
@@ -142,18 +141,21 @@ class Game
           self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y)).on(GOAL_SQUARE)
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         when PLAYER
-          self.player = Player.new(Point.new(x, y)).on(FLOOR)
+          self.blocks[Point.new(x, y)] = Player.new(Point.new(x, y)).on(FLOOR)
           self.cells[Point.new(x, y)] = FLOOR
         when PLAYER_ON_GOAL_SQUARE
-          self.player = Player.new(Point.new(x, y)).on(GOAL_SQUARE)
+          self.blocks[Point.new(x, y)] = Player.new(Point.new(x, y)).on(GOAL_SQUARE)
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         end
       end
     end
   end
 
+  def [](position)
+    self.blocks[position]
+  end
+
   def to_s
-    # raise blocks.inspect
     s = ''
     s += cells.map do |position, char|
       move_to(position) + char
@@ -161,31 +163,18 @@ class Game
     s += blocks.map do |position, block|
       move_to(position) + block.to_s
     end.join
-    s += player.to_s
     s
   end
 end
 
-game = Game.new
-game.load(File.read('level1.txt'))
-sokoban = game.player
+field = Field.new
+field.load(File.read('level1.txt'))
+player = field.player
 
 draw = -> do
-  print game
+  print field
   sleep 0.02
 end
-
-# possible_to_move_to = ->(direction) do
-#   first_step, second_step = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
-#   if game.cells[first_step] == FLOOR or game.cells[first_step] == GOAL_SQUARE
-#     if game.boxes.include?(first_step)
-#       game.cells[second_step] == FLOOR or game.cells[second_step] == GOAL_SQUARE
-#     else
-#       true
-#     end
-#   end
-#   false
-# end
 
 clear
 
@@ -194,14 +183,10 @@ loop do
   case key
   when :up, :right, :down, :left
     direction = key
-    # if possible_to_move(sokoban).to(direction)
-    # end
-    # if possible_to_move_to.call(direction)
-    #   sokoban.step(direction)
-    #   if game.boxes.include?(sokoban.position)
-    #     game.boxes.delete(sokoban.position)
-    #     game.boxes.push(sokoban.next(direction).position)
-    #   end
+    first_position = player.position.next(direction)
+    second_position = first_position.next(direction)
+    # if player.can_be_moved_to(field[first_position])
+    #   move(player).to(first_position)
     # end
   when :control_c
     quit
