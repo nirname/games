@@ -48,7 +48,7 @@ FLOOR = ' ' # 0x20
 PLAYER = '@' # 0x40
 PLAYER_ON_GOAL_SQUARE = '+' # 0x2b
 BOX = '$'# 0x24
-BOX_ON_GOAL_SQUARE = '*' # 0x2a
+BOX_ON_GOAL_SQUARE = '.' # 0x2a
 
 Point = Struct.new :x, :y do
   def +(point)
@@ -76,15 +76,23 @@ class Symbol
   end
 end
 
-Block = Struct.new :position do
-  def next(direction)
-    Block.new(self.position + direction)
+Block = Struct.new :position, :cell do
+  def initialize(position, cell = FLOOR)
+    super
   end
-end
 
-class Box < Block
-  def to_s
-    move_to(position) + BOX
+  def next(direction)
+    self.class.new(self.position + direction)
+  end
+
+  def on(cell)
+    block = self.dup
+    block.cell = cell
+    block
+  end
+
+  def on?(cell)
+    self.cell == cell
   end
 end
 
@@ -94,25 +102,17 @@ class Wall < Block
   end
 end
 
-class Player < Block
+class Box < Block
   def to_s
-    move_to(position) + PLAYER
+    move_to(position) + (on?(GOAL_SQUARE) ? BOX_ON_GOAL_SQUARE : BOX)
   end
 end
 
-# Player = Struct.new :position do
-#   def step(direction)
-#     self.position += direction
-#   end
-
-#   def next(direction)
-#     Player.new(self.position + direction)
-#   end
-
-#   def to_s
-#     move_to(position) + PLAYER
-#   end
-# end
+class Player < Block
+  def to_s
+    move_to(position) + (on?(GOAL_SQUARE) ? PLAYER_ON_GOAL_SQUARE : PLAYER)
+  end
+end
 
 class Game
   attr_accessor :blocks
@@ -136,16 +136,16 @@ class Game
         when WALL
           self.blocks[Point.new(x, y)] = Wall.new(Point.new(x, y))
         when BOX
-          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y))
+          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y)).on(FLOOR)
           self.cells[Point.new(x, y)] = FLOOR
         when BOX_ON_GOAL_SQUARE
-          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y))
+          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y)).on(GOAL_SQUARE)
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         when PLAYER
-          self.player = Player.new(Point.new(x, y))
+          self.player = Player.new(Point.new(x, y)).on(FLOOR)
           self.cells[Point.new(x, y)] = FLOOR
         when PLAYER_ON_GOAL_SQUARE
-          self.player = Player.new(Point.new(x, y))
+          self.player = Player.new(Point.new(x, y)).on(GOAL_SQUARE)
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         end
       end
@@ -153,6 +153,7 @@ class Game
   end
 
   def to_s
+    # raise blocks.inspect
     s = ''
     s += cells.map do |position, char|
       move_to(position) + char
@@ -160,6 +161,8 @@ class Game
     s += blocks.map do |position, block|
       move_to(position) + block.to_s
     end.join
+    s += player.to_s
+    s
   end
 end
 
@@ -169,7 +172,6 @@ sokoban = game.player
 
 draw = -> do
   print game
-  print sokoban
   sleep 0.02
 end
 
