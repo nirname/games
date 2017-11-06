@@ -113,11 +113,13 @@ class Game
           self.cells[Point.new(x, y)] = char
         when PLAYER
           self.player = Player.new(Point.new(x, y))
+          self.cells[Point.new(x, y)] = FLOOR
         when PLAYER_ON_GOAL_SQUARE
           self.player = Player.new(Point.new(x, y))
           cells[Point.new(x, y)] = GOAL_SQUARE
         when BOX
           self.boxes.push(Point.new(x, y))
+          self.cells[Point.new(x, y)] = FLOOR
         when BOX_ON_GOAL_SQUARE
           self.boxes.push(Point.new(x, y))
           self.cells[Point.new(x, y)] = GOAL_SQUARE
@@ -148,11 +150,15 @@ draw = -> do
 end
 
 possible_to_move_to = ->(direction) do
-  next1, next2 = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
-  # case game.cells[next1]
-  # when
-  # end
-  true
+  first_step, second_step = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
+  if game.cells[first_step] == FLOOR or game.cells[first_step] == GOAL_SQUARE
+    if game.boxes.include?(first_step)
+      game.cells[second_step] == FLOOR or game.cells[second_step] == GOAL_SQUARE
+    else
+      true
+    end
+  end
+  false
 end
 
 clear
