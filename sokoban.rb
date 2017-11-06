@@ -147,18 +147,34 @@ class Player < Block
   end
 end
 
+class Statistics
+  attr_accessor :moves
+  attr_accessor :pushes
+
+  def initialize
+    self.moves = 0
+    self.pushes = 0
+  end
+
+  def to_s
+    "moves: #{moves}\n\r" +
+    "pushes: #{pushes}"
+  end
+end
+
 class Promise < Proc
   alias :to :call
 end
 
-class Field
+class Level
   attr_accessor :blocks
   attr_accessor :cells
-  attr_reader   :player
+  attr_accessor :statistics
 
   def initialize
-    @cells = {}
-    @blocks = []
+    self.cells = {}
+    self.blocks = []
+    self.statistics = Statistics.new
   end
 
   def player
@@ -202,6 +218,13 @@ class Field
         self.blocks.delete(block)
         self.blocks << block.class.new(position).on(self.cells[position])
       end
+
+      case block
+      when Player
+        self.statistics.moves += 1
+      when Box
+        self.statistics.pushes += 1
+      end
     end
   end
 
@@ -211,15 +234,22 @@ class Field
       print_at(position) + char
     end.join
     s += blocks.map(&:to_s).join
+    s += print_at(Point.new(0, 15))
+    s += complete? ? "Complete!\n\r" : "\n\r"
+    s += statistics.to_s
     s
+  end
+
+  def complete?
+    self.blocks.select{ |block| block.is_a? Box }.all?{ |block| block.on?(GOAL_SQUARE) }
   end
 end
 
-field = Field.new
-field.load(File.read('level1.txt'))
+level = Level.new
+level.load(File.read('level1.txt'))
 
 draw = -> do
-  print field
+  print level
   sleep 0.02
 end
 
@@ -231,24 +261,25 @@ loop do
   key = detect_key(read_char)
   case key
   when :up, :right, :down, :left
-    player = field.player
+    next if level.complete?
+    player = level.player
     direction = key
     next_position = player.position.next(direction)
     following_position = next_position.next(direction)
-    next_block = field[next_position]
-    following_block = field[following_position]
+    next_block = level[next_position]
+    following_block = level[following_position]
 
-    # puts field.blocks.inspect
+    # puts level.blocks.inspect
     # puts next_position.inspect
     # puts following_position.inspect
     # puts next_block.inspect
     # puts following_block.inspect
 
     if player.can_be_moved_to(next_block) && next_block.can_be_moved_to(following_block)
-      field.move(player).to(next_position)
-      field.move(next_block).to(following_position)
-      # field.move(player).to(first_position)
-      # field.move(box).to(following_position)
+      level.move(player).to(next_position)
+      level.move(next_block).to(following_position)
+      # level.move(player).to(first_position)
+      # level.move(box).to(following_position)
     end
   when :control_c
     quit
