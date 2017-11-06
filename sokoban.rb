@@ -2,7 +2,6 @@
 
 require 'io/console'
 require 'set'
-system("stty raw -echo")
 
 def clear
   system "clear && printf '\033[3J'"
@@ -246,7 +245,10 @@ class Level
 end
 
 level = Level.new
-level.load(File.read('level1.txt'))
+level_name = ARGV[0]
+raise 'Level required' unless level_name
+level.load(File.read(level_name))
+system("stty raw -echo")
 
 draw = -> do
   print level
