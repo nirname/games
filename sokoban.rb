@@ -8,7 +8,7 @@ def clear
   system "clear && printf '\033[3J'"
 end
 
-def move_to(position)
+def print_at(position)
   "\033[#{position.y + 1};#{position.x * 2 + 1}H"
 end
 
@@ -63,6 +63,10 @@ Point = Struct.new :x, :y do
       end
     end
   end
+
+  def next(direction)
+    self + direction
+  end
 end
 
 class Symbol
@@ -76,54 +80,127 @@ class Symbol
   end
 end
 
-Player = Struct.new :position do
-  def step(direction)
-    self.position += direction
+Block = Struct.new :position do
+  attr_accessor :cell
+
+  def initialize(position)
+    self.cell = FLOOR
+    super
   end
 
-  def next(direction)
-    Player.new(self.position + direction)
+  def on(cell)
+    block = self.dup
+    block.cell = cell
+    block
   end
 
-  def to_s
-    move_to(position) + PLAYER
+  def on?(cell)
+    self.cell == cell
   end
 end
 
-class Game
-  attr_accessor :cells
-  attr_accessor :boxes
-  attr_reader :player
+class EmptyBlock < Block
+  def can_be_moved_to(block)
+    true
+  end
+end
 
-  def initialize
-    @cells ||= {}
-    @boxes ||= []
+class Wall < Block
+  def to_s
+    print_at(position) + WALL
   end
 
-  def player=(value)
-    raise 'Only one player is supported' if @player
-    @player = value
+  def can_be_moved_to(block)
+    false
+  end
+end
+
+class Box < Block
+  def to_s
+    print_at(position) + (self.on?(GOAL_SQUARE) ? BOX_ON_GOAL_SQUARE : BOX)
+  end
+
+  def can_be_moved_to(block)
+    case block
+    when EmptyBlock
+      true
+    else
+      false
+    end
+  end
+end
+
+class Player < Block
+  def to_s
+    print_at(position) + (self.on?(GOAL_SQUARE) ? PLAYER_ON_GOAL_SQUARE : PLAYER)
+  end
+
+  def can_be_moved_to(block)
+    case block
+    when EmptyBlock
+      true
+    when Box
+      true
+    else
+      false
+    end
+  end
+end
+
+class Promise < Proc
+  alias :to :call
+end
+
+class Field
+  attr_accessor :blocks
+  attr_accessor :cells
+  attr_reader   :player
+
+  def initialize
+    @cells = {}
+    @blocks = []
+  end
+
+  def player
+    self.blocks.select{ |block| block.is_a? Player }.first
   end
 
   def load(data)
     data.split("\n").each_with_index do |line, y|
       line.split('').each_with_index do |char, x|
         case char
-        when WALL, FLOOR, GOAL_SQUARE
-          self.cells[Point.new(x, y)] = char
-        when PLAYER
-          self.player = Player.new(Point.new(x, y))
-          self.cells[Point.new(x, y)] = FLOOR
-        when PLAYER_ON_GOAL_SQUARE
-          self.player = Player.new(Point.new(x, y))
-          cells[Point.new(x, y)] = GOAL_SQUARE
+        when WALL
+          self.blocks << Wall.new(Point.new(x, y))
         when BOX
-          self.boxes.push(Point.new(x, y))
+          self.blocks << Box.new(Point.new(x, y)).on(FLOOR)
           self.cells[Point.new(x, y)] = FLOOR
         when BOX_ON_GOAL_SQUARE
-          self.boxes.push(Point.new(x, y))
+          self.blocks << Box.new(Point.new(x, y)).on(GOAL_SQUARE)
+          self.cells[Point.new(x, y)] = GOAL_SQUARE
+        when PLAYER
+          self.blocks << Player.new(Point.new(x, y)).on(FLOOR)
+          self.cells[Point.new(x, y)] = FLOOR
+        when PLAYER_ON_GOAL_SQUARE
+          self.blocks << Player.new(Point.new(x, y)).on(GOAL_SQUARE)
+          self.cells[Point.new(x, y)] = GOAL_SQUARE
+        when FLOOR
+          self.cells[Point.new(x, y)] = FLOOR
+        when GOAL_SQUARE
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         end
+      end
+    end
+  end
+
+  def [](position)
+    self.blocks.select{ |block| block.position == position }.first || EmptyBlock.new(position)
+  end
+
+  def move(block)
+    Promise.new do |position|
+      unless block.is_a? EmptyBlock
+        self.blocks.delete(block)
+        self.blocks << block.class.new(position).on(self.cells[position])
       end
     end
   end
@@ -131,54 +208,52 @@ class Game
   def to_s
     s = ''
     s += cells.map do |position, char|
-      move_to(position) + char
+      print_at(position) + char
     end.join
-    s += boxes.map do |position|
-      move_to(position) + BOX
-    end.join
+    s += blocks.map(&:to_s).join
+    s
   end
 end
 
-game = Game.new
-game.load(File.read('level1.txt'))
-sokoban = game.player
+field = Field.new
+field.load(File.read('level1.txt'))
 
 draw = -> do
-  print game
-  print sokoban
+  print field
   sleep 0.02
 end
 
-possible_to_move_to = ->(direction) do
-  first_step, second_step = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
-  if game.cells[first_step] == FLOOR or game.cells[first_step] == GOAL_SQUARE
-    if game.boxes.include?(first_step)
-      game.cells[second_step] == FLOOR or game.cells[second_step] == GOAL_SQUARE
-    else
-      true
-    end
-  end
-  false
-end
-
 clear
+
+draw.call()
 
 loop do
   key = detect_key(read_char)
   case key
   when :up, :right, :down, :left
+    player = field.player
     direction = key
-    if possible_to_move_to.call(direction)
-      sokoban.step(direction)
-      if game.boxes.include?(sokoban.position)
-        game.boxes.delete(sokoban.position)
-        game.boxes.push(sokoban.next(direction).position)
-      end
+    next_position = player.position.next(direction)
+    following_position = next_position.next(direction)
+    next_block = field[next_position]
+    following_block = field[following_position]
+
+    # puts field.blocks.inspect
+    # puts next_position.inspect
+    # puts following_position.inspect
+    # puts next_block.inspect
+    # puts following_block.inspect
+
+    if player.can_be_moved_to(next_block) && next_block.can_be_moved_to(following_block)
+      field.move(player).to(next_position)
+      field.move(next_block).to(following_position)
+      # field.move(player).to(first_position)
+      # field.move(box).to(following_position)
     end
   when :control_c
     quit
   when :space
   end
 
-  draw.call()
+  draw.call() if key
 end
