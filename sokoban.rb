@@ -100,18 +100,6 @@ class Player < Block
   end
 end
 
-# class Floor < Block
-#   def to_s
-#     move_to(position) + FLOOR
-#   end
-# end
-
-# class GoalSquare < Block
-#   def to_s
-#     move_to(position) + GOAL_SQUARE
-#   end
-# end
-
 # Player = Struct.new :position do
 #   def step(direction)
 #     self.position += direction
@@ -129,34 +117,35 @@ end
 class Game
   attr_accessor :blocks
   attr_accessor :cells
+  attr_reader   :player
 
   def initialize
     @cells = {}
     @blocks = {}
   end
 
-  # def player=(value)
-  #   raise 'Only one player is supported' if @player
-  #   @player = value
-  # end
+  def player=(value)
+    raise 'Only one player is supported' if @player
+    @player = value
+  end
 
   def load(data)
     data.split("\n").each_with_index do |line, y|
       line.split('').each_with_index do |char, x|
         case char
         when WALL
-          self.blocks[Point.new(x, y)] = Wall.new(Point(x, y))
+          self.blocks[Point.new(x, y)] = Wall.new(Point.new(x, y))
         when BOX
-          self.blocks[Point.new(x, y)] = Box.new(Point(x, y))
+          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y))
           self.cells[Point.new(x, y)] = FLOOR
         when BOX_ON_GOAL_SQUARE
-          self.blocks[Point.new(x, y)] = Box.new(Point(x, y))
+          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y))
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         when PLAYER
-          self.blocks[Point.new(x, y)] = Player.new(Point(x, y))
+          self.player = Player.new(Point.new(x, y))
           self.cells[Point.new(x, y)] = FLOOR
         when PLAYER_ON_GOAL_SQUARE
-          self.blocks[Point.new(x, y)] = Player.new(Point(x, y))
+          self.player = Player.new(Point.new(x, y))
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         end
       end
@@ -168,8 +157,8 @@ class Game
     s += cells.map do |position, char|
       move_to(position) + char
     end.join
-    s += objects.map do |position|
-      move_to(position) + BOX
+    s += blocks.map do |position, block|
+      move_to(position) + block.to_s
     end.join
   end
 end
