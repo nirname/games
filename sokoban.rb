@@ -269,17 +269,9 @@ loop do
     next_block = level[next_position]
     following_block = level[following_position]
 
-    # puts level.blocks.inspect
-    # puts next_position.inspect
-    # puts following_position.inspect
-    # puts next_block.inspect
-    # puts following_block.inspect
-
     if player.can_be_moved_to(next_block) && next_block.can_be_moved_to(following_block)
       level.move(player).to(next_position)
       level.move(next_block).to(following_position)
-      # level.move(player).to(first_position)
-      # level.move(box).to(following_position)
     end
   when :control_c
     quit
