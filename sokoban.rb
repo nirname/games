@@ -48,7 +48,7 @@ FLOOR = ' ' # 0x20
 PLAYER = '@' # 0x40
 PLAYER_ON_GOAL_SQUARE = '+' # 0x2b
 BOX = '$'# 0x24
-BOX_ON_GOAL_SQUARE = '.' # 0x2a
+BOX_ON_GOAL_SQUARE = '*' # 0x2a
 
 Point = Struct.new :x, :y do
   def +(point)
@@ -80,8 +80,11 @@ class Symbol
   end
 end
 
-Block = Struct.new :position, :cell do
-  def initialize(position, cell = FLOOR)
+Block = Struct.new :position do
+  attr_accessor :cell
+
+  def initialize(position)
+    self.cell = FLOOR
     super
   end
 
@@ -96,9 +99,16 @@ Block = Struct.new :position, :cell do
   end
 end
 
+class EmptyBlock < Block
+end
+
 class Wall < Block
   def to_s
     move_to(position) + WALL
+  end
+
+  def can_be_moved_to(block)
+    false
   end
 end
 
@@ -106,11 +116,31 @@ class Box < Block
   def to_s
     move_to(position) + (self.on?(GOAL_SQUARE) ? BOX_ON_GOAL_SQUARE : BOX)
   end
+
+  def can_be_moved_to(block)
+    case block
+    when EmptyBlock
+      true
+    else
+      false
+    end
+  end
 end
 
 class Player < Block
   def to_s
     move_to(position) + (self.on?(GOAL_SQUARE) ? PLAYER_ON_GOAL_SQUARE : PLAYER)
+  end
+
+  def can_be_moved_to(block)
+    case block
+    when EmptyBlock
+      true
+    when Box
+      true
+    else
+      false
+    end
   end
 end
 
@@ -121,11 +151,11 @@ class Field
 
   def initialize
     @cells = {}
-    @blocks = {}
+    @blocks = []
   end
 
   def player
-    self.blocks.values.select{ |block| block.is_a? Player }.first
+    self.blocks.select{ |block| block.is_a? Player }.first
   end
 
   def load(data)
@@ -133,18 +163,18 @@ class Field
       line.split('').each_with_index do |char, x|
         case char
         when WALL
-          self.blocks[Point.new(x, y)] = Wall.new(Point.new(x, y))
+          self.blocks << Wall.new(Point.new(x, y))
         when BOX
-          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y)).on(FLOOR)
+          self.blocks << Box.new(Point.new(x, y)).on(FLOOR)
           self.cells[Point.new(x, y)] = FLOOR
         when BOX_ON_GOAL_SQUARE
-          self.blocks[Point.new(x, y)] = Box.new(Point.new(x, y)).on(GOAL_SQUARE)
+          self.blocks << Box.new(Point.new(x, y)).on(GOAL_SQUARE)
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         when PLAYER
-          self.blocks[Point.new(x, y)] = Player.new(Point.new(x, y)).on(FLOOR)
+          self.blocks << Player.new(Point.new(x, y)).on(FLOOR)
           self.cells[Point.new(x, y)] = FLOOR
         when PLAYER_ON_GOAL_SQUARE
-          self.blocks[Point.new(x, y)] = Player.new(Point.new(x, y)).on(GOAL_SQUARE)
+          self.blocks << Player.new(Point.new(x, y)).on(GOAL_SQUARE)
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         end
       end
@@ -152,7 +182,7 @@ class Field
   end
 
   def [](position)
-    self.blocks[position]
+    self.blocks.select{ |block| block.position == position }.first || EmptyBlock.new(position)
   end
 
   def to_s
@@ -160,9 +190,7 @@ class Field
     s += cells.map do |position, char|
       move_to(position) + char
     end.join
-    s += blocks.map do |position, block|
-      move_to(position) + block.to_s
-    end.join
+    s += blocks.map(&:to_s).join
     s
   end
 end
@@ -183,11 +211,23 @@ loop do
   case key
   when :up, :right, :down, :left
     direction = key
-    first_position = player.position.next(direction)
-    second_position = first_position.next(direction)
-    # if player.can_be_moved_to(field[first_position])
-    #   move(player).to(first_position)
-    # end
+    next_position = player.position.next(direction)
+    following_position = next_position.next(direction)
+    next_block = field[next_position]
+    following_block = field[following_position]
+
+    puts field.blocks.inspect
+    puts next_position.inspect
+    puts following_position.inspect
+    puts next_block.inspect
+    puts following_block.inspect
+
+    if player.can_be_moved_to(next_block) && next_block.can_be_moved_to(following_block)
+    #   field.move(player).to(first_position)
+      raise 'yes'
+    else
+      raise 'no'
+    end
   when :control_c
     quit
   when :space
