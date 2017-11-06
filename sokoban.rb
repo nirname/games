@@ -100,6 +100,9 @@ Block = Struct.new :position do
 end
 
 class EmptyBlock < Block
+  def can_be_moved_to(block)
+    true
+  end
 end
 
 class Wall < Block
@@ -214,7 +217,6 @@ end
 
 field = Field.new
 field.load(File.read('level1.txt'))
-player = field.player
 
 draw = -> do
   print field
@@ -229,6 +231,7 @@ loop do
   key = detect_key(read_char)
   case key
   when :up, :right, :down, :left
+    player = field.player
     direction = key
     next_position = player.position.next(direction)
     following_position = next_position.next(direction)
