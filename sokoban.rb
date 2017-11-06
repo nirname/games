@@ -76,52 +76,87 @@ class Symbol
   end
 end
 
-Player = Struct.new :position do
-  def step(direction)
-    self.position += direction
-  end
-
+Block = Struct.new :position do
   def next(direction)
-    Player.new(self.position + direction)
+    Block.new(self.position + direction)
   end
+end
 
+class Box < Block
+  def to_s
+    move_to(position) + BOX
+  end
+end
+
+class Wall < Block
+  def to_s
+    move_to(position) + WALL
+  end
+end
+
+class Player < Block
   def to_s
     move_to(position) + PLAYER
   end
 end
 
+# class Floor < Block
+#   def to_s
+#     move_to(position) + FLOOR
+#   end
+# end
+
+# class GoalSquare < Block
+#   def to_s
+#     move_to(position) + GOAL_SQUARE
+#   end
+# end
+
+# Player = Struct.new :position do
+#   def step(direction)
+#     self.position += direction
+#   end
+
+#   def next(direction)
+#     Player.new(self.position + direction)
+#   end
+
+#   def to_s
+#     move_to(position) + PLAYER
+#   end
+# end
+
 class Game
+  attr_accessor :blocks
   attr_accessor :cells
-  attr_accessor :boxes
-  attr_reader :player
 
   def initialize
-    @cells ||= {}
-    @boxes ||= []
+    @cells = {}
+    @blocks = {}
   end
 
-  def player=(value)
-    raise 'Only one player is supported' if @player
-    @player = value
-  end
+  # def player=(value)
+  #   raise 'Only one player is supported' if @player
+  #   @player = value
+  # end
 
   def load(data)
     data.split("\n").each_with_index do |line, y|
       line.split('').each_with_index do |char, x|
         case char
-        when WALL, FLOOR, GOAL_SQUARE
-          self.cells[Point.new(x, y)] = char
-        when PLAYER
-          self.player = Player.new(Point.new(x, y))
-          self.cells[Point.new(x, y)] = FLOOR
-        when PLAYER_ON_GOAL_SQUARE
-          self.player = Player.new(Point.new(x, y))
-          cells[Point.new(x, y)] = GOAL_SQUARE
+        when WALL
+          self.blocks[Point.new(x, y)] = Wall.new(Point(x, y))
         when BOX
-          self.boxes.push(Point.new(x, y))
+          self.blocks[Point.new(x, y)] = Box.new(Point(x, y))
           self.cells[Point.new(x, y)] = FLOOR
         when BOX_ON_GOAL_SQUARE
-          self.boxes.push(Point.new(x, y))
+          self.blocks[Point.new(x, y)] = Box.new(Point(x, y))
+          self.cells[Point.new(x, y)] = GOAL_SQUARE
+        when PLAYER
+          self.blocks[Point.new(x, y)] = Player.new(Point(x, y))
+          self.cells[Point.new(x, y)] = FLOOR
+        when PLAYER_ON_GOAL_SQUARE
+          self.blocks[Point.new(x, y)] = Player.new(Point(x, y))
           self.cells[Point.new(x, y)] = GOAL_SQUARE
         end
       end
@@ -133,7 +168,7 @@ class Game
     s += cells.map do |position, char|
       move_to(position) + char
     end.join
-    s += boxes.map do |position|
+    s += objects.map do |position|
       move_to(position) + BOX
     end.join
   end
@@ -149,17 +184,17 @@ draw = -> do
   sleep 0.02
 end
 
-possible_to_move_to = ->(direction) do
-  first_step, second_step = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
-  if game.cells[first_step] == FLOOR or game.cells[first_step] == GOAL_SQUARE
-    if game.boxes.include?(first_step)
-      game.cells[second_step] == FLOOR or game.cells[second_step] == GOAL_SQUARE
-    else
-      true
-    end
-  end
-  false
-end
+# possible_to_move_to = ->(direction) do
+#   first_step, second_step = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
+#   if game.cells[first_step] == FLOOR or game.cells[first_step] == GOAL_SQUARE
+#     if game.boxes.include?(first_step)
+#       game.cells[second_step] == FLOOR or game.cells[second_step] == GOAL_SQUARE
+#     else
+#       true
+#     end
+#   end
+#   false
+# end
 
 clear
 
@@ -168,13 +203,15 @@ loop do
   case key
   when :up, :right, :down, :left
     direction = key
-    if possible_to_move_to.call(direction)
-      sokoban.step(direction)
-      if game.boxes.include?(sokoban.position)
-        game.boxes.delete(sokoban.position)
-        game.boxes.push(sokoban.next(direction).position)
-      end
-    end
+    # if possible_to_move(sokoban).to(direction)
+    # end
+    # if possible_to_move_to.call(direction)
+    #   sokoban.step(direction)
+    #   if game.boxes.include?(sokoban.position)
+    #     game.boxes.delete(sokoban.position)
+    #     game.boxes.push(sokoban.next(direction).position)
+    #   end
+    # end
   when :control_c
     quit
   when :space
