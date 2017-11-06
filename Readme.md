@@ -13,5 +13,5 @@ Snake console ruby implementation
 Sokoban console ruby implementation
 
 ```
-./sokoban.rb
+./sokoban.rb level1.txt
 ```
