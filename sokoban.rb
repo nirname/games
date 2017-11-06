@@ -43,12 +43,12 @@ def quit
 end
 
 WALL = '#' # 0x23
+GOAL_SQUARE = '.' # 0x2e
+FLOOR = ' ' # 0x20
 PLAYER = '@' # 0x40
 PLAYER_ON_GOAL_SQUARE = '+' # 0x2b
 BOX = '$'# 0x24
 BOX_ON_GOAL_SQUARE = '*' # 0x2a
-GOAL_SQUARE = '.' # 0x2e
-FLOOR = ' ' # 0x20
 
 Point = Struct.new :x, :y do
   def +(point)
@@ -76,13 +76,13 @@ class Symbol
   end
 end
 
-Sokoban = Struct.new :position do
+Player = Struct.new :position do
   def step(direction)
     self.position += direction
   end
 
   def next(direction)
-    Sokoban.new(self.position + direction)
+    Player.new(self.position + direction)
   end
 
   def to_s
@@ -90,38 +90,61 @@ Sokoban = Struct.new :position do
   end
 end
 
-class Field
+class Game
   attr_accessor :cells
   attr_accessor :boxes
-  attr_accessor :player
+  attr_reader :player
 
   def initialize
-    self.cells ||= {}
+    @cells ||= {}
+    @boxes ||= []
+  end
+
+  def player=(value)
+    raise 'Only one player is supported' if @player
+    @player = value
   end
 
   def load(data)
-    data.split("\n").each_with_index do |row, y|
-      row.split('').each_with_index do |char, x|
-        cells[Point.new(x, y)] = char
+    data.split("\n").each_with_index do |line, y|
+      line.split('').each_with_index do |char, x|
+        case char
+        when WALL, FLOOR, GOAL_SQUARE
+          self.cells[Point.new(x, y)] = char
+        when PLAYER
+          self.player = Player.new(Point.new(x, y))
+        when PLAYER_ON_GOAL_SQUARE
+          self.player = Player.new(Point.new(x, y))
+          cells[Point.new(x, y)] = GOAL_SQUARE
+        when BOX
+          self.boxes.push(Point.new(x, y))
+        when BOX_ON_GOAL_SQUARE
+          self.boxes.push(Point.new(x, y))
+          self.cells[Point.new(x, y)] = GOAL_SQUARE
+        end
       end
     end
   end
 
   def to_s
-    cells.map do |position, char|
+    s = ''
+    s += cells.map do |position, char|
       move_to(position) + char
+    end.join
+    s += boxes.map do |position|
+      move_to(position) + BOX
     end.join
   end
 end
 
-field = Field.new
-field.load(File.read('level1.txt'))
-
-sokoban = Sokoban.new(Point.new(1, 1))
+game = Game.new
+game.load(File.read('level1.txt'))
+sokoban = game.player
 
 draw = -> do
-  print field
-  # print sokoban
+  print game
+  print sokoban
+  sleep 0.02
 end
 
 possible = ->(direction) do
