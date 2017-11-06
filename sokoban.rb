@@ -147,8 +147,11 @@ draw = -> do
   sleep 0.02
 end
 
-possible = ->(direction) do
+possible_to_move_to = ->(direction) do
   next1, next2 = sokoban.next(direction).position, sokoban.next(direction).next(direction).position
+  # case game.cells[next1]
+  # when
+  # end
   true
 end
 
@@ -159,8 +162,12 @@ loop do
   case key
   when :up, :right, :down, :left
     direction = key
-    if possible.call(direction)
+    if possible_to_move_to.call(direction)
       sokoban.step(direction)
+      if game.boxes.include?(sokoban.position)
+        game.boxes.delete(sokoban.position)
+        game.boxes.push(sokoban.next(direction).position)
+      end
     end
   when :control_c
     quit
