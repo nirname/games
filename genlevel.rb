@@ -64,11 +64,6 @@ b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
 
 # puts blocks.map(&:to_s).join("\n\n")
 
-# 1. Build an empty room.
-
-width = rand 3
-height = rand 3
-
 Field = Struct.new :width, :height, :blocks do
   def initialize(width, height, blocks = [])
     super
@@ -95,7 +90,11 @@ Field = Struct.new :width, :height, :blocks do
   end
 end
 
+# 1. Build an empty room.
+
 f = Field.new 3, 3
+
+# 2. Fill in
 f.fill do |x, y|
   blocks.sample.randomize
 end
