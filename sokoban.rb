@@ -234,8 +234,9 @@ class Level
     end.join
     s += blocks.map(&:to_s).join
     s += print_at(Point.new(0, 15))
-    s += complete? ? "Complete!\n\r" : "\n\r"
     s += statistics.to_s
+    s += "\n\r"
+    s += "Complete!" if complete?
     s
   end
 
