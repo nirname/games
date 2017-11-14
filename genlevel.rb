@@ -10,6 +10,11 @@
 # b - box
 # e - empty
 
+seed = ARGV[0]
+RANDOM = seed ? Random.new(seed.to_i) : Random.new
+seed = RANDOM.seed
+STDERR.puts "seed: #{seed}\n"
+
 # Block size without border
 BLOCK_SIZE = 3
 
@@ -44,7 +49,7 @@ class Block < Array
   # random rotate or flip
   # central symmetry is the same as 180 degrees rotate is
   def randomize
-    self.rotate(rand(4)).flip(rand(2))
+    self.rotate(RANDOM.rand(4)).flip(RANDOM.rand(2))
   end
 
   def to_s
@@ -105,9 +110,9 @@ f = Field.new 3, 3
 # 2. Fill in
 
 f.fill do |y, x|
-  block = blocks.sample.randomize
+  block = blocks.sample(random: RANDOM).randomize
   while(!f.accept?(block, y, x)) do
-    block = blocks.sample.randomize
+    block = blocks.sample(random: RANDOM).randomize
   end
   block
 end
