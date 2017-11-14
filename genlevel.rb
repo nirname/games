@@ -57,6 +57,8 @@ blocks = chunks.map do |chunk|
   Block.new chunk.split("\n").map{ |line| line.split('') }
 end
 
+EMPTY_BLOCK = Block.new Array.new(5){ Array.new(5){ 'e' } }
+
 b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
 # puts b.to_s
 # puts '---'
@@ -64,26 +66,27 @@ b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
 
 # puts blocks.map(&:to_s).join("\n\n")
 
-Field = Struct.new :width, :height, :blocks do
-  def initialize(width, height, blocks = [])
+Field = Struct.new :width, :height do
+  attr_accessor :blocks
+  def initialize(width, height)
+    self.blocks = Hash.new(EMPTY_BLOCK)
     super
   end
 
-  def fill
-    field = self.dup
-    height.times do |y|
-      field.blocks[y] ||= []
-      width.times do |x|
-        field.blocks[y][x] = yield(x, y)
-      end
-    end
-  end
+  # def fill
+  #   field = self.dup
+  #   height.times do |y|
+  #     width.times do |x|
+  #       field.blocks[[y, x]] = yield(y, x)
+  #     end
+  #   end
+  # end
 
   def to_s
     height.times.map do |y|
       BLOCK_SIZE.times.map do |l|
         width.times.map do |x|
-          blocks[y][x][l][1 .. BLOCK_SIZE].join
+          self.blocks[[y, x]][l][1 .. BLOCK_SIZE].join
         end.join
       end.join("\n")
     end.join("\n")
@@ -95,7 +98,8 @@ end
 f = Field.new 3, 3
 
 # 2. Fill in
-f.fill do |x, y|
-  blocks.sample.randomize
-end
+# f.fill do |y, x|
+#   blocks.sample.randomize
+# end
+
 puts f.to_s
