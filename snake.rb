@@ -205,10 +205,18 @@ snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 grow_food(field, snake)
 
 info = -> do
-  move_to(0, field.height + 1) +
-  "Use arrow keys to play\n\r" +
-  "Press Control + c to exit\n\r" +
-  "Press Space to pause\n\r"
+  _info = []
+
+  _info << move_to(0, field.height + 1)
+  if snake.asleep?
+    _info << "Snake is sleeping now (game paused)"
+  else
+    _info << "Press Space to pause               "
+  end
+  _info << "Use arrow keys to play"
+  _info << ""
+  _info << "Press Control + c to exit"
+  _info.join("\n\r")
 end
 
 draw = -> do
