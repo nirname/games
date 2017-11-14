@@ -95,7 +95,7 @@ class Symbol
 end
 
 Snake = Struct.new :body, :direction, :state do
-  def initialize(body, direction = :right, state = :asleep)
+  def initialize(body, direction = :right, state = :alive)
     super
   end
 
@@ -204,19 +204,20 @@ snake = Snake.new [[3, 1], [2, 1], [1, 1]]
 
 grow_food(field, snake)
 
+@game_paused = true
+
 info = -> do
   _info = []
 
-  _info << move_to(0, field.height + 1)
+  _info << move_to(0, field.height)
   _info << "Snake length: #{snake.length}"
   _info << ""
-  if snake.asleep?
-    _info << "Snake is sleeping now (game paused)"
+  if @game_paused
+    _info << "Game paused"
   else
     _info << "Press Space to pause               "
   end
   _info << "Use arrow keys to play"
-  _info << ""
   _info << "Press Control + c to exit"
   _info.join("\n\r")
 end
@@ -254,25 +255,35 @@ begin
 
   clear
 
-  loop do
-    current = Time.now
-    elapsed = current - previous
-    lag += elapsed
-    previous = current
+  draw.call()
 
+  loop do
     key = detect_key(read_char)
 
-    snake.wake if key && snake.asleep?
+    current = Time.now
+    elapsed = current - previous
+    previous = current
+
+    case key
+    when :space
+      @game_paused = !@game_paused
+    when :control_c
+      quit
+    when :up, :right, :down, :left
+      @game_paused = false
+    end
+
+    next if @game_paused
+
+    lag += elapsed
+
+    # snake.wake if key && snake.asleep?
 
     case key
     when :up, :right, :down, :left
       if snake.turn(key)
         lag = time_per_update.call()
       end
-    when :control_c
-      quit
-    when :space
-      snake.sleep
     end
 
     while (lag >= time_per_update.call())
