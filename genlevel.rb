@@ -10,6 +10,7 @@
 # b - box
 # e - empty
 
+# Block size without border
 BLOCK_SIZE = 3
 
 class Block < Array
@@ -59,7 +60,7 @@ end
 
 EMPTY_BLOCK = Block.new Array.new(5){ Array.new(5){ 'e' } }
 
-b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
+# b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
 # puts b.to_s
 # puts '---'
 # puts b.rotate(2).to_s
@@ -73,14 +74,18 @@ Field = Struct.new :width, :height do
     super
   end
 
-  # def fill
-  #   field = self.dup
-  #   height.times do |y|
-  #     width.times do |x|
-  #       field.blocks[[y, x]] = yield(y, x)
-  #     end
-  #   end
-  # end
+  def fill
+    field = self.dup
+    height.times do |y|
+      width.times do |x|
+        field.blocks[[y, x]] = yield(y, x)
+      end
+    end
+  end
+
+  def accept?(block, y, x)
+    true
+  end
 
   def to_s
     height.times.map do |y|
@@ -98,8 +103,13 @@ end
 f = Field.new 3, 3
 
 # 2. Fill in
-# f.fill do |y, x|
-#   blocks.sample.randomize
-# end
+
+f.fill do |y, x|
+  block = blocks.sample.randomize
+  while(!f.accept?(block, y, x)) do
+    block = blocks.sample.randomize
+  end
+  block
+end
 
 puts f.to_s
