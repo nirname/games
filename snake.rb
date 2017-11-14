@@ -208,6 +208,8 @@ info = -> do
   _info = []
 
   _info << move_to(0, field.height + 1)
+  _info << "Snake length: #{snake.length}"
+  _info << ""
   if snake.asleep?
     _info << "Snake is sleeping now (game paused)"
   else
