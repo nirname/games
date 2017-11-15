@@ -125,18 +125,6 @@ Snake = Struct.new :body, :direction, :state do
     body.length
   end
 
-  def sleep
-    self.state = :asleep if alive? && !dead?
-  end
-
-  def asleep?
-    self.state == :asleep
-  end
-
-  def wake
-    self.state = :alive if asleep? && !dead?
-  end
-
   def alive?
     self.state == :alive
   end
@@ -215,10 +203,11 @@ info = -> do
   if @game_paused
     _info << "Game paused"
   else
-    _info << "Press Space to pause               "
+    _info << "Press Space to pause"
   end
   _info << "Use arrow keys to play"
   _info << "Press Control + c to exit"
+  _info.map!{ |msg| msg.ljust(80)}
   _info.join("\n\r")
 end
 
@@ -260,10 +249,6 @@ begin
   loop do
     key = detect_key(read_char)
 
-    current = Time.now
-    elapsed = current - previous
-    previous = current
-
     case key
     when :space
       @game_paused = !@game_paused
@@ -275,9 +260,11 @@ begin
 
     next if @game_paused
 
-    lag += elapsed
+    current = Time.now
+    elapsed = current - previous
+    previous = current
 
-    # snake.wake if key && snake.asleep?
+    lag += elapsed
 
     case key
     when :up, :right, :down, :left
