@@ -74,6 +74,7 @@ EMPTY_BLOCK = Block.new Array.new(5){ Array.new(5){ 'e' } }
 
 Field = Struct.new :width, :height do
   attr_accessor :blocks
+
   def initialize(width, height)
     self.blocks = Hash.new(EMPTY_BLOCK)
     super
@@ -89,6 +90,12 @@ Field = Struct.new :width, :height do
   end
 
   def accept?(block, y, x)
+    # right_block = blocks[[y, x + 1]]
+    # left_block = blocks[[y, x - 1]]
+    # bottom_block = blocks[[y + 1, x]]
+    # top_block = blocks[[y - 1, x]]
+
+    # block.right_border match right_block.left_border
     true
   end
 
