@@ -19,6 +19,16 @@ STDERR.puts "seed: #{seed}\n"
 BLOCK_SIZE = 3
 
 class Border < Array
+  def opposite
+    map do |row|
+      row.reverse
+    end.reverse
+  end
+
+  def matches?(border)
+    border.opposite
+    true
+  end
 end
 
 class Block < Array
@@ -122,7 +132,7 @@ Field = Struct.new :width, :height do
     block.right.border(2).matches?(right_block.left.border(2)) &&
     block.top.border(2).matches?(top_block.bottom.border(2)) &&
     block.bottom.border(2).matches?(bottom_block.top.border(2)) &&
-    block.left.border(2).matches?(right_border.right.border(2))
+    block.left.border(2).matches?(right_block.right.border(2))
   end
 
   def to_s
