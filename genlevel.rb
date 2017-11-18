@@ -25,8 +25,8 @@ class Border < Array
     end.reverse
   end
 
-  def matches?(border)
-    border.opposite
+  def overlaps?(border)
+    border
     true
   end
 end
@@ -129,10 +129,10 @@ Field = Struct.new :width, :height do
     bottom_block = blocks[[y + 1, x]]
     top_block = blocks[[y - 1, x]]
 
-    block.right.border(2).matches?(right_block.left.border(2)) &&
-    block.top.border(2).matches?(top_block.bottom.border(2)) &&
-    block.bottom.border(2).matches?(bottom_block.top.border(2)) &&
-    block.left.border(2).matches?(right_block.right.border(2))
+    block.right.border(2).overlaps?(right_block.left.border(2).opposite) &&
+    block.top.border(2).overlaps?(top_block.bottom.border(2).opposite) &&
+    block.bottom.border(2).overlaps?(bottom_block.top.border(2).opposite) &&
+    block.left.border(2).overlaps?(right_block.right.border(2).opposite)
   end
 
   def to_s
