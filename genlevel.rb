@@ -18,6 +18,9 @@ STDERR.puts "seed: #{seed}\n"
 # Block size without border
 BLOCK_SIZE = 3
 
+class Border < Array
+end
+
 class Block < Array
   # clock-wise
   def reverse
@@ -46,6 +49,26 @@ class Block < Array
     block
   end
 
+  def top
+    rotate 0
+  end
+
+  def right
+    rotate 1
+  end
+
+  def bottom
+    rotate 2
+  end
+
+  def left
+    rotate 3
+  end
+
+  def border(n)
+    Border.new first(n)
+  end
+
   # random rotate or flip
   # central symmetry is the same as 180 degrees rotate is
   def randomize
@@ -65,7 +88,8 @@ end
 
 EMPTY_BLOCK = Block.new Array.new(5){ Array.new(5){ 'e' } }
 
-# b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
+b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
+
 # puts b.to_s
 # puts '---'
 # puts b.rotate(2).to_s
@@ -95,10 +119,10 @@ Field = Struct.new :width, :height do
     bottom_block = blocks[[y + 1, x]]
     top_block = blocks[[y - 1, x]]
 
-    block.right_border(2).matches?(right_block.left_border(2)) &&
-    block.top_border(2).matches?(top_block.bottom_border(2)) &&
-    block.bottom_border(2).matches?(bottom_block.top_border(2)) &&
-    block.left_border(2).matches?(right_border.right_border(2))
+    block.right.border(2).matches?(right_block.left.border(2)) &&
+    block.top.border(2).matches?(top_block.bottom.border(2)) &&
+    block.bottom.border(2).matches?(bottom_block.top.border(2)) &&
+    block.left.border(2).matches?(right_border.right.border(2))
   end
 
   def to_s
