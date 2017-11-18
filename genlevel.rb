@@ -4,7 +4,6 @@
 # 3. Find the state farthest from the goal state.
 
 # f - floor
-# g - goal
 # w - wall
 # b - blank
 
@@ -13,8 +12,22 @@ RANDOM = seed ? Random.new(seed.to_i) : Random.new
 seed = RANDOM.seed
 STDERR.puts "seed: #{seed}\n"
 
-# Block size without border
-BLOCK_SIZE = 3
+class Cell < String
+  def overlaps?(other)
+    [self, other].any?{ |cell| cell == 'b' }
+  end
+
+  def to_notation
+    case self
+    when 'f'
+      ' '
+    when 'w'
+      '#'
+    when 'b'
+      '?'
+    end
+  end
+end
 
 class Border < Array
   def opposite
@@ -24,8 +37,7 @@ class Border < Array
   end
 
   def overlaps?(border)
-    border
-    true
+    self.flatten.zip(border.flatten).all?{ |x, y| x.overlaps? y }
   end
 end
 
@@ -86,12 +98,16 @@ class Block < Array
   def to_s
     self.map(&:join).join("\n")
   end
+
+  def body
+    Block.new self[1 ... -1].map{ |row| row[1 ... -1] }
+  end
 end
 
 chunks = File.read('blocks.txt').split(/\n{2,}/).compact
 
 blocks = chunks.map do |chunk|
-  Block.new chunk.split("\n").map{ |line| line.split('') }
+  Block.new chunk.split("\n").map{ |line| line.split('').map{ |char| Cell.new char } }
 end
 
 BLANK_BLOCK = Block.new Array.new(5){ Array.new(5){ 'b' } }
@@ -133,20 +149,31 @@ Field = Struct.new :width, :height do
     block.left.border(2).overlaps?(right_block.right.border(2).opposite)
   end
 
+  def to_block
+    result = []
+
+    blocks.each do |(y, x), block|
+      block.body.each_with_index do |row, row_number|
+        row.each_with_index do |cell, col_number|
+          y_pos = y * 3 + row_number
+          x_pos = x * 3 + col_number
+          result[y_pos] ||= []
+          result[y_pos][x_pos] = cell
+        end
+      end
+    end
+
+    Block.new result
+  end
+
   def to_s
-    height.times.map do |y|
-      BLOCK_SIZE.times.map do |l|
-        width.times.map do |x|
-          self.blocks[[y, x]][l][1 .. BLOCK_SIZE].join
-        end.join
-      end.join("\n")
-    end.join("\n")
+    to_block.to_s
   end
 end
 
 # 1. Build an empty room.
 
-f = Field.new 3, 3
+f = Field.new 2, 2
 
 # 2. Fill in
 
