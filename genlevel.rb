@@ -90,13 +90,15 @@ Field = Struct.new :width, :height do
   end
 
   def accept?(block, y, x)
-    # right_block = blocks[[y, x + 1]]
-    # left_block = blocks[[y, x - 1]]
-    # bottom_block = blocks[[y + 1, x]]
-    # top_block = blocks[[y - 1, x]]
+    right_block = blocks[[y, x + 1]]
+    left_block = blocks[[y, x - 1]]
+    bottom_block = blocks[[y + 1, x]]
+    top_block = blocks[[y - 1, x]]
 
-    # block.right_border match right_block.left_border
-    true
+    block.right_border(2).matches?(right_block.left_border(2)) &&
+    block.top_border(2).matches?(top_block.bottom_border(2)) &&
+    block.bottom_border(2).matches?(bottom_block.top_border(2)) &&
+    block.left_border(2).matches?(right_border.right_border(2))
   end
 
   def to_s
