@@ -6,9 +6,7 @@
 # f - floor
 # g - goal
 # w - wall
-# p - player
-# b - box
-# e - empty
+# b - blank
 
 seed = ARGV[0]
 RANDOM = seed ? Random.new(seed.to_i) : Random.new
@@ -96,7 +94,7 @@ blocks = chunks.map do |chunk|
   Block.new chunk.split("\n").map{ |line| line.split('') }
 end
 
-EMPTY_BLOCK = Block.new Array.new(5){ Array.new(5){ 'e' } }
+BLANK_BLOCK = Block.new Array.new(5){ Array.new(5){ 'b' } }
 
 b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
 
@@ -110,7 +108,7 @@ Field = Struct.new :width, :height do
   attr_accessor :blocks
 
   def initialize(width, height)
-    self.blocks = Hash.new(EMPTY_BLOCK)
+    self.blocks = Hash.new(BLANK_BLOCK)
     super
   end
 
