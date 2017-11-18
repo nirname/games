@@ -4,19 +4,42 @@
 # 3. Find the state farthest from the goal state.
 
 # f - floor
-# g - goal
 # w - wall
-# p - player
-# b - box
-# e - empty
+# b - blank
 
 seed = ARGV[0]
 RANDOM = seed ? Random.new(seed.to_i) : Random.new
 seed = RANDOM.seed
 STDERR.puts "seed: #{seed}\n"
 
-# Block size without border
-BLOCK_SIZE = 3
+class Cell < String
+  def overlaps?(other)
+    [self, other].any?{ |cell| cell == 'b' }
+  end
+
+  def to_notation
+    case self
+    when 'f'
+      ' '
+    when 'w'
+      '#'
+    when 'b'
+      '?'
+    end
+  end
+end
+
+class Border < Array
+  def opposite
+    map do |row|
+      row.reverse
+    end.reverse
+  end
+
+  def overlaps?(border)
+    self.flatten.zip(border.flatten).all?{ |x, y| x.overlaps? y }
+  end
+end
 
 class Block < Array
   # clock-wise
@@ -46,6 +69,26 @@ class Block < Array
     block
   end
 
+  def top
+    rotate 0
+  end
+
+  def right
+    rotate 1
+  end
+
+  def bottom
+    rotate 2
+  end
+
+  def left
+    rotate 3
+  end
+
+  def border(n)
+    Border.new first(n)
+  end
+
   # random rotate or flip
   # central symmetry is the same as 180 degrees rotate is
   def randomize
@@ -55,17 +98,22 @@ class Block < Array
   def to_s
     self.map(&:join).join("\n")
   end
+
+  def body
+    Block.new self[1 ... -1].map{ |row| row[1 ... -1] }
+  end
 end
 
 chunks = File.read('blocks.txt').split(/\n{2,}/).compact
 
 blocks = chunks.map do |chunk|
-  Block.new chunk.split("\n").map{ |line| line.split('') }
+  Block.new chunk.split("\n").map{ |line| line.split('').map{ |char| Cell.new char } }
 end
 
-EMPTY_BLOCK = Block.new Array.new(5){ Array.new(5){ 'e' } }
+BLANK_BLOCK = Block.new Array.new(5){ Array.new(5){ 'b' } }
 
-# b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
+b = Block.new ('a'..'z').to_a.first(25).each_slice(5).to_a
+
 # puts b.to_s
 # puts '---'
 # puts b.rotate(2).to_s
@@ -76,7 +124,7 @@ Field = Struct.new :width, :height do
   attr_accessor :blocks
 
   def initialize(width, height)
-    self.blocks = Hash.new(EMPTY_BLOCK)
+    self.blocks = Hash.new(BLANK_BLOCK)
     super
   end
 
@@ -90,29 +138,42 @@ Field = Struct.new :width, :height do
   end
 
   def accept?(block, y, x)
-    # right_block = blocks[[y, x + 1]]
-    # left_block = blocks[[y, x - 1]]
-    # bottom_block = blocks[[y + 1, x]]
-    # top_block = blocks[[y - 1, x]]
+    right_block = blocks[[y, x + 1]]
+    left_block = blocks[[y, x - 1]]
+    bottom_block = blocks[[y + 1, x]]
+    top_block = blocks[[y - 1, x]]
 
-    # block.right_border match right_block.left_border
-    true
+    block.right.border(2).overlaps?(right_block.left.border(2).opposite) &&
+    block.top.border(2).overlaps?(top_block.bottom.border(2).opposite) &&
+    block.bottom.border(2).overlaps?(bottom_block.top.border(2).opposite) &&
+    block.left.border(2).overlaps?(right_block.right.border(2).opposite)
+  end
+
+  def to_block
+    result = []
+
+    blocks.each do |(y, x), block|
+      block.body.each_with_index do |row, row_number|
+        row.each_with_index do |cell, col_number|
+          y_pos = y * 3 + row_number
+          x_pos = x * 3 + col_number
+          result[y_pos] ||= []
+          result[y_pos][x_pos] = cell
+        end
+      end
+    end
+
+    Block.new result
   end
 
   def to_s
-    height.times.map do |y|
-      BLOCK_SIZE.times.map do |l|
-        width.times.map do |x|
-          self.blocks[[y, x]][l][1 .. BLOCK_SIZE].join
-        end.join
-      end.join("\n")
-    end.join("\n")
+    to_block.to_s
   end
 end
 
 # 1. Build an empty room.
 
-f = Field.new 3, 3
+f = Field.new 2, 2
 
 # 2. Fill in
 
