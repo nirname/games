@@ -99,6 +99,14 @@ class Block < Array
     self.map(&:join).join("\n")
   end
 
+  def to_notation
+    self.map do |row|
+      row.map do |cell|
+        cell.to_notation
+      end.join
+    end.join("\n")
+  end
+
   def body
     Block.new self[1 ... -1].map{ |row| row[1 ... -1] }
   end
@@ -169,6 +177,10 @@ Field = Struct.new :width, :height do
   def to_s
     to_block.to_s
   end
+
+  def to_notation
+    to_block.to_notation
+  end
 end
 
 # 1. Build an empty room.
@@ -193,4 +205,4 @@ f.fill do |y, x|
   end
 end
 
-puts f.to_s
+puts f.to_notation
