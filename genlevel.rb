@@ -8,9 +8,6 @@
 # b - blank
 
 seed = ARGV[0]
-RANDOM = seed ? Random.new(seed.to_i) : Random.new
-seed = RANDOM.seed
-STDERR.puts "seed: #{seed}\n"
 
 class Cell < String
   def overlaps?(other)
@@ -91,8 +88,9 @@ class Block < Array
 
   # random rotate or flip
   # central symmetry is the same as 180 degrees rotate is
-  def randomize
-    self.rotate(RANDOM.rand(4)).flip(RANDOM.rand(2))
+  def randomize(random = nil)
+    random ||= Random.new
+    self.rotate(random.rand(4)).flip(random.rand(2))
   end
 
   def to_s
@@ -183,6 +181,12 @@ Field = Struct.new :width, :height do
   end
 end
 
+# 0. Pick specified seed or generate one
+
+random = seed ? Random.new(seed.to_i) : Random.new
+seed = random.seed
+STDERR.puts "seed: #{seed}\n"
+
 # 1. Build an empty room.
 
 f = Field.new 2, 2
@@ -190,7 +194,7 @@ f = Field.new 2, 2
 f.fill do |y, x|
   block = nil
   100.times do
-    block = blocks.sample(random: RANDOM).randomize
+    block = blocks.sample(random: random).randomize(random)
     if f.accept?(block, y, x)
       break
     else
@@ -205,4 +209,16 @@ f.fill do |y, x|
   end
 end
 
-puts f.to_notation
+# 2. Check level for connectivity
+
+block = f.to_block
+@x, @y = nil, nil
+@y = block.index{ |row| @x = row.index{ |c| c == 'f' } }
+
+puts '---'
+puts @x, @y
+puts '---'
+puts block.to_s
+puts '---'
+puts block.to_notation
+
