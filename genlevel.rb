@@ -176,11 +176,21 @@ end
 f = Field.new 2, 2
 
 f.fill do |y, x|
-  block = blocks.sample(random: RANDOM).randomize
-  while(!f.accept?(block, y, x)) do
+  block = nil
+  100.times do
     block = blocks.sample(random: RANDOM).randomize
+    if f.accept?(block, y, x)
+      break
+    else
+      block = nil
+    end
   end
-  block
+  if block
+    block
+  else
+    STDERR.puts "Failed to generate level with seed #{seed}"
+    exit 1
+  end
 end
 
 puts f.to_s
