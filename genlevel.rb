@@ -175,8 +175,6 @@ end
 
 f = Field.new 2, 2
 
-# 2. Fill in
-
 f.fill do |y, x|
   block = blocks.sample(random: RANDOM).randomize
   while(!f.accept?(block, y, x)) do
